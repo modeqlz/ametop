@@ -5,6 +5,16 @@ import { supabaseAdmin } from '@/lib/supabaseServer';
 
 export const runtime = 'nodejs';
 
+type TgUser = {
+  id: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  photo_url?: string;
+  language_code?: string;
+  is_premium?: boolean;
+};
+
 // HMAC-проверка initData по официальной схеме
 function verifyInitData(initData: string, botToken: string) {
   const params = new URLSearchParams(initData);
@@ -28,10 +38,18 @@ export async function POST(req: Request) {
   try {
     // DEV-байпас: записываем профиль в БД, чтобы dev-режим был полноценным
     if (process.env.DEV_BYPASS_AUTH === 'true') {
-      const mock = JSON.parse(process.env.DEV_TELEGRAM_USER_JSON || '{}');
+      const raw = process.env.DEV_TELEGRAM_USER_JSON || '{}';
+      const mock = JSON.parse(raw) as Partial<TgUser>;
+
+      if (!mock.id) {
+        return NextResponse.json(
+          { ok: false, error: 'DEV_TELEGRAM_USER_JSON must contain "id"' },
+          { status: 400 }
+        );
+      }
 
       const { error } = await supabaseAdmin.from('profiles').upsert({
-        id: mock.id,                                  // <= ВАЖНО: колонка id (bigint)
+        id: mock.id, // ВАЖНО: колонка id (bigint)
         username: mock.username ?? null,
         first_name: mock.first_name ?? null,
         last_name: mock.last_name ?? null,
@@ -40,19 +58,23 @@ export async function POST(req: Request) {
         is_premium: !!mock.is_premium,
         updated_at: new Date().toISOString(),
       });
-
       if (error) throw error;
+
       return NextResponse.json({ ok: true, dev: true });
     }
 
-    const { initData } = await req.json().catch(() => ({}));
+    const body = (await req.json().catch(() => ({}))) as { initData?: string };
+    const initData = body?.initData;
     if (!initData) {
       return NextResponse.json({ ok: false, error: 'initData is required' }, { status: 400 });
     }
 
-    const botToken = process.env.TELEGRAM_BOT_TOKEN!;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
     if (!botToken) {
-      return NextResponse.json({ ok: false, error: 'Server misconfigured: TELEGRAM_BOT_TOKEN' }, { status: 500 });
+      return NextResponse.json(
+        { ok: false, error: 'Server misconfigured: TELEGRAM_BOT_TOKEN is missing' },
+        { status: 500 }
+      );
     }
 
     // Проверяем подпись
@@ -62,11 +84,11 @@ export async function POST(req: Request) {
 
     // Парсим поля из initData
     const p = new URLSearchParams(initData);
-    const user = JSON.parse(p.get('user') || '{}');
-    const authDateSec = Number(p.get('auth_date') || '0') * 1000;
+    const user = JSON.parse(p.get('user') || '{}') as TgUser;
+    const authDateMs = Number(p.get('auth_date') || '0') * 1000;
 
-    // Доп.проверка «свежести» (<= 1 часа)
-    if (Date.now() - authDateSec > 60 * 60 * 1000) {
+    // Доп. проверка «свежести» (<= 1 часа)
+    if (Date.now() - authDateMs > 60 * 60 * 1000) {
       return NextResponse.json({ ok: false, error: 'Auth data is too old' }, { status: 401 });
     }
 
@@ -75,7 +97,7 @@ export async function POST(req: Request) {
       .from('profiles')
       .upsert(
         {
-          id: user.id,                                // <= ключ
+          id: user.id, // ключ
           username: user.username ?? null,
           first_name: user.first_name ?? null,
           last_name: user.last_name ?? null,
@@ -84,7 +106,7 @@ export async function POST(req: Request) {
           is_premium: !!user.is_premium,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'id' }                          // <= конфликт по id
+        { onConflict: 'id' }
       )
       .select()
       .single();
@@ -92,8 +114,9 @@ export async function POST(req: Request) {
     if (error) throw error;
 
     return NextResponse.json({ ok: true, profile: data });
-  } catch (e: any) {
-    // вернём текст ошибки — удобно для дебага
-    return NextResponse.json({ ok: false, error: String(e?.message || e) }, { status: 500 });
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
