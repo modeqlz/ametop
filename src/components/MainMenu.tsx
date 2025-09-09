@@ -1,4 +1,3 @@
-"use client";
 import React, { useMemo, useRef, useState, useEffect } from "react";
 
 /**
@@ -191,6 +190,24 @@ export default function MobileMessenger() {
   const [messages, setMessages] = useState<Message[]>(seedMessages);
   const [activeChatId, setActiveChatId] = useState<string | null>("ame");
   const [tab, setTab] = useState("chats");
+  const [kbOffset, setKbOffset] = useState(0); // смещение под виртуальную клавиатуру
+
+  // --- keyboard-safe area handling (iOS/Android) ---
+  useEffect(() => {
+    const vv: any = (globalThis as any).visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const bottomInset = Math.max(0, vv.height + vv.offsetTop - window.innerHeight);
+      setKbOffset(bottomInset);
+    };
+    vv.addEventListener("resize", onResize);
+    vv.addEventListener("scroll", onResize);
+    onResize();
+    return () => {
+      vv.removeEventListener("resize", onResize);
+      vv.removeEventListener("scroll", onResize);
+    };
+  }, []);
 
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId) || null, [chats, activeChatId]);
   const filtered = useMemo(() => chats.filter((c) => c.title.toLowerCase().includes(query.toLowerCase())), [chats, query]);
@@ -208,7 +225,7 @@ export default function MobileMessenger() {
 
   const ChatsScreen = (
     <div className="flex flex-col h-full">
-      <TopBar title="Чаты" right={<Icon name="search" className="w-5 h-5 text-[#9aa0a6]" />} />
+      <TopBar title="Чаты" right={<Icon name="search" className="w-6 h-6 text-[#9aa0a6]" />} />
       <Search value={query} onChange={setQuery} />
       <div className="flex-1 overflow-y-auto">
         {filtered.length === 0 ? (
@@ -224,11 +241,13 @@ export default function MobileMessenger() {
     <div className="flex flex-col h-full">
       <TopBar
         title={
-          <div className="flex items-center gap-2">
-            <button onClick={() => setActiveChatId(null)} aria-label="Назад"><Icon name="back" className="w-5 h-5 text-[#9aa0a6]" /></button>
-            <Avatar alt={activeChat?.title || "Chat"} size={28} />
+          <div className="flex items-center gap-3">
+            <button onClick={() => setActiveChatId(null)} aria-label="Назад" className="active:opacity-80 min-h-11 min-w-11 grid place-items-center">
+              <Icon name="back" className="w-6 h-6 text-[#9aa0a6]" />
+            </button>
+            <Avatar alt={activeChat?.title || "Chat"} size={30} />
             <div className="leading-tight">
-              <div className="font-semibold">{activeChat?.title || "Чат"}</div>
+              <div className="font-semibold text-[clamp(15px,3.8vw,17px)]">{activeChat?.title || "Чат"}</div>
               {activeChat?.isAME && <div className="text-[11px] text-[#89b4ff]">Оповещения и новости</div>}
             </div>
           </div>
@@ -241,7 +260,9 @@ export default function MobileMessenger() {
           <div className="h-full grid place-items-center text-[#9aa0a6] p-6 text-center">Сообщений пока нет.</div>
         )}
       </div>
-      <Composer onSend={handleSend} />
+      <div style={{ paddingBottom: `calc(env(safe-area-inset-bottom) + ${Math.max(0, kbOffset)}px)` }}>
+        <Composer onSend={handleSend} />
+      </div>
     </div>
   );
 
@@ -252,14 +273,18 @@ export default function MobileMessenger() {
     <div className="h-full grid place-items-center text-[#9aa0a6] p-6 text-center">Раздел «Настройки» (заглушка)</div>
   );
 
+  // Only-phone viewport: фиксированная мобильная ширина, центр на больших экранах
   return (
-    <div className="w-full h-dvh bg-[#0f1013] text-[#e7e7ea] grid" style={{ gridTemplateRows: "1fr auto" }}>
-      <div className="overflow-hidden">
-        {tab === "chats" && (activeChatId ? ChatView : ChatsScreen)}
-        {tab === "calls" && CallsStub}
-        {tab === "settings" && SettingsStub}
+    <div className="w-full h-dvh bg-[#0f1013] text-[#e7e7ea] grid place-items-center">
+      <div className="w-full h-full max-w-[480px] mx-auto grid" style={{ gridTemplateRows: "1fr auto" }}>
+        <div className="overflow-hidden">
+          {tab === "chats" && (activeChatId ? ChatView : ChatsScreen)}
+          {tab === "calls" && CallsStub}
+          {tab === "settings" && SettingsStub}
+        </div>
+        <TabBar active={tab} onTab={setTab} />
       </div>
-      <TabBar active={tab} onTab={setTab} />
     </div>
   );
 }
+
