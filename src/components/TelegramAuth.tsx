@@ -19,7 +19,10 @@ export default function TelegramAuth({ onAuthSuccess }: TelegramAuthProps) {
         // Инициализируем Telegram WebApp
         const tg = initTelegramWebApp();
         
-        if (!tg) {
+        // В режиме разработки обходим проверку Telegram WebApp
+        const isDev = process.env.NODE_ENV === 'development';
+        
+        if (!tg && !isDev) {
           setError('Это приложение работает только в Telegram');
           setIsLoading(false);
           return;
@@ -28,7 +31,7 @@ export default function TelegramAuth({ onAuthSuccess }: TelegramAuthProps) {
         // Получаем initData
         const initData = getTelegramWebAppInitData();
         
-        if (!initData) {
+        if (!initData && !isDev) {
           setError('Не удалось получить данные авторизации');
           setIsLoading(false);
           return;
@@ -40,7 +43,7 @@ export default function TelegramAuth({ onAuthSuccess }: TelegramAuthProps) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ initData }),
+          body: JSON.stringify({ initData: initData || '' }),
         });
 
         const result = await response.json();

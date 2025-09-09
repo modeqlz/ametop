@@ -51,18 +51,21 @@ export async function POST(req: Request) {
       if (!mock.id) {
         return NextResponse.json({ ok:false, error:'DEV_TELEGRAM_USER_JSON must contain "id"' }, { status:400 });
       }
-      const { error } = await supabaseAdmin.from('profiles').upsert({
-        id: mock.id,
+      const { data, error } = await supabaseAdmin.from('profiles').upsert({
+        telegram_id: mock.id,
         username: mock.username ?? null,
         first_name: mock.first_name ?? null,
         last_name: mock.last_name ?? null,
         photo_url: mock.photo_url ?? null,
-        language_code: mock.language_code ?? null,
-        is_premium: !!mock.is_premium,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: 'telegram_id' }).select().single();
       if (error) throw error;
-      return NextResponse.json({ ok:true, dev:true });
+      return NextResponse.json({ 
+        ok: true, 
+        user: mock, 
+        profile: data,
+        dev: true 
+      });
     }
 
     const body = (await req.json().catch(() => ({}))) as { initData?: string };
@@ -101,22 +104,20 @@ export async function POST(req: Request) {
       .from('profiles')
       .upsert(
         {
-          id: user.id,
+          telegram_id: user.id,
           username: user.username ?? null,
           first_name: user.first_name ?? null,
           last_name: user.last_name ?? null,
           photo_url: user.photo_url ?? null,
-          language_code: user.language_code ?? null,
-          is_premium: !!user.is_premium,
           updated_at: new Date().toISOString(),
         },
-        { onConflict: 'id' }
+        { onConflict: 'telegram_id' }
       )
       .select()
       .single();
     if (error) throw error;
 
-    return NextResponse.json({ ok:true, profile: data });
+    return NextResponse.json({ ok:true, user, profile: data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
     return NextResponse.json({ ok:false, error: message }, { status:500 });
