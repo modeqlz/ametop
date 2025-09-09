@@ -1,5 +1,5 @@
-import TelegramAuth from '@/components/TelegramAuth';
+import MainMenu from '@/components/MainMenu';
 
 export default function Home() {
-  return <TelegramAuth />;
+  return <MainMenu />;
 }
