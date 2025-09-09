@@ -73,6 +73,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok:false, error:'Server misconfigured: TELEGRAM_BOT_TOKEN is missing' }, { status:500 });
     }
 
+    // Отладочный вывод отпечатка токена
+    if (process.env.DEBUG_TG === 'true') {
+      const tokenFp = crypto.createHash('sha256').update(botToken).digest('hex').slice(0, 8);
+      console.log('[TGDEBUG]', { tokenFp });
+    }
+
     if (!verifyInitData(initData, botToken)) {
       // при включённом DEBUG_TG скажи смотреть логи
       const msg = DEBUG_TG ? 'Invalid Telegram data (see logs)' : 'Invalid Telegram data';
