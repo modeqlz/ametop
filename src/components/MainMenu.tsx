@@ -195,7 +195,7 @@ export default function MobileMessenger() {
 
   // --- keyboard-safe area handling (iOS/Android) ---
   useEffect(() => {
-    const vv: any = (globalThis as any).visualViewport;
+    const vv: VisualViewport | undefined = (globalThis as typeof globalThis & { visualViewport?: VisualViewport }).visualViewport;
     if (!vv) return;
     const onResize = () => {
       const bottomInset = Math.max(0, vv.height + vv.offsetTop - window.innerHeight);
