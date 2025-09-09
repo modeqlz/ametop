@@ -15,7 +15,7 @@ interface Chat {
 }
 
 export default function ChatsPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: number; username?: string; first_name: string; last_name?: string; language_code?: string } | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
   const router = useRouter();
 

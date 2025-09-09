@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function AMEChatPage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: number; username?: string; first_name: string; last_name?: string; language_code?: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {

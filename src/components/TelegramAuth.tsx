@@ -5,7 +5,7 @@ import { getTelegramWebAppInitData, initTelegramWebApp } from '@/lib/telegram';
 import { useRouter } from 'next/navigation';
 
 interface TelegramAuthProps {
-  onAuthSuccess?: (user: any) => void;
+  onAuthSuccess?: (user: { id: number; username?: string; first_name: string; last_name?: string; language_code?: string }) => void;
 }
 
 export default function TelegramAuth({ onAuthSuccess }: TelegramAuthProps) {

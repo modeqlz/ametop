@@ -69,7 +69,6 @@ export function verifyTelegramWebAppData(
     if (isValid) {
       // Парсим данные пользователя
       const userData = urlParams.get('user');
-      const authDate = parseInt(urlParams.get('auth_date') || '0');
       
       let user: TelegramUser | undefined;
       if (userData) {
@@ -81,7 +80,7 @@ export function verifyTelegramWebAppData(
         data: {
           query_id: urlParams.get('query_id') || undefined,
           user,
-          auth_date,
+          auth_date: parseInt(urlParams.get('auth_date') || '0'),
           hash,
         },
       };
@@ -101,7 +100,7 @@ export function getTelegramWebAppInitData(): string | null {
   if (typeof window === 'undefined') return null;
   
   // Проверяем, доступен ли Telegram WebApp
-  const tg = (window as any).Telegram?.WebApp;
+  const tg = (window as unknown as { Telegram?: { WebApp?: { initData?: string } } }).Telegram?.WebApp;
   if (!tg) return null;
   
   return tg.initData || null;
@@ -113,18 +112,29 @@ export function getTelegramWebAppInitData(): string | null {
 export function initTelegramWebApp() {
   if (typeof window === 'undefined') return null;
   
-  const tg = (window as any).Telegram?.WebApp;
+  const tg = (window as unknown as { 
+    Telegram?: { 
+      WebApp?: { 
+        expand?: () => void; 
+        ready?: () => void; 
+        MainButton?: { show?: () => void }; 
+        BackButton?: object;
+        setHeaderColor?: (color: string) => void;
+        setBackgroundColor?: (color: string) => void;
+      } 
+    } 
+  }).Telegram?.WebApp;
   if (!tg) return null;
   
   // Расширяем WebApp на весь экран
-  tg.expand();
+  tg.expand?.();
   
   // Включаем главную кнопку
-  tg.MainButton.show();
+  tg.MainButton?.show?.();
   
   // Устанавливаем тему
-  tg.setHeaderColor('#212121');
-  tg.setBackgroundColor('#212121');
+  tg.setHeaderColor?.('#212121');
+  tg.setBackgroundColor?.('#212121');
   
   return tg;
 }

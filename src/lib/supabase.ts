@@ -1,14 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Server-side client with service role key
 export const supabaseAdmin = createClient(
   supabaseUrl,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key',
   {
     auth: {
       autoRefreshToken: false,
@@ -18,6 +18,28 @@ export const supabaseAdmin = createClient(
 );
 
 // Database types
+export interface Database {
+  public: {
+    Tables: {
+      profiles: {
+        Row: Profile;
+        Insert: Omit<Profile, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Profile, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      chats: {
+        Row: Chat;
+        Insert: Omit<Chat, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Chat, 'id' | 'created_at' | 'updated_at'>>;
+      };
+      messages: {
+        Row: Message;
+        Insert: Omit<Message, 'id' | 'created_at'>;
+        Update: Partial<Omit<Message, 'id' | 'created_at'>>;
+      };
+    };
+  };
+}
+
 export interface Profile {
   id: string;
   telegram_id: number;
