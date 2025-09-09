@@ -31,8 +31,9 @@ function verifyInitData(initData: string, botToken: string) {
     .map(([k,v]) => `${k}=${v}`)
     .join('\n');
 
-  const secret = crypto.createHash('sha256').update(botToken).digest();
-  const calc = crypto.createHmac('sha256', secret).update(dataCheckString).digest('hex');
+  // Telegram WebApp uses HMAC('WebAppData', botToken) as secret key
+  const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+  const calc = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
 
   dbg({ len: initData.length, calc, hashFromTG, dataCheckString });
 
