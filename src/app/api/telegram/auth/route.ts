@@ -23,8 +23,6 @@ function verifyInitData(initData: string, botToken: string) {
   const params = new URLSearchParams(initData);
   const hashFromTG = params.get('hash') || '';
   params.delete('hash');
-  // Remove signature field as it's not part of hash calculation
-  params.delete('signature');
 
   const dataCheckString = [...params.entries()]
     .sort(([a],[b]) => a.localeCompare(b))
