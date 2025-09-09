@@ -1,11 +1,12 @@
+// src/lib/supabaseServer.ts
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-key';
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const supabaseServer = createClient(supabaseUrl, supabaseServiceKey, {
-  auth: {
-    autoRefreshToken: false,
-    persistSession: false,
-  },
+if (!url) throw new Error('NEXT_PUBLIC_SUPABASE_URL is missing');
+if (!service) throw new Error('SUPABASE_SERVICE_ROLE_KEY is missing');
+
+export const supabaseAdmin = createClient(url, service, {
+  auth: { persistSession: false, autoRefreshToken: false },
 });
