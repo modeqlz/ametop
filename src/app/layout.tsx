@@ -1,14 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import Script from "next/script";
 
 export const metadata: Metadata = {
   title: "AME - Telegram Mini App",
   description: "AME Telegram Mini App with chat functionality",
-  viewport: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no",
   other: {
     "telegram-web-app": "true",
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
